@@ -1,20 +1,17 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (token/ERC20/ERC20.sol)
 
 pragma solidity ^0.8.0;
 
 import "./presets/ERC20PresetMinterPauser.sol";
-import "../../utils/math/SafeMath.sol";
-import "../../utils/Context.sol";
 
-contract U3O8ttToken is ERC20PresetMinterPauser {
-    uint256 private _feeMultiplier;
-    uint256 private _feeDivider;
+contract U3O8tttToken is ERC20PresetMinterPauser {
+    uint256 private _feeMultiplier = 5;
+    uint256 private _feeDivider = 10000;
+    bytes32 public constant COMMISSION_RECEIVER_ROLE = keccak256("COMMISSION_RECEIVER_ROLE");
 
-    constructor() ERC20PresetMinterPauser("u3o8tt", "U3O8tt") {
+    constructor() ERC20PresetMinterPauser("u3o8ttt", "U3O8ttt") {
         _mint(msg.sender, 10000 * (10 ** uint256(decimals())));
-        _feeMultiplier = 5;
-        _feeDivider = 10000;
+        _setupRole(COMMISSION_RECEIVER_ROLE, _msgSender());
     }
 
     function _transfer(
@@ -27,6 +24,7 @@ contract U3O8ttToken is ERC20PresetMinterPauser {
 
         _beforeTokenTransfer(sender, recipient, amount);
 
+        address feeReceiver = getRoleMember(COMMISSION_RECEIVER_ROLE, 0);
         uint256 feeAmount = (amount * _feeMultiplier) / _feeDivider;
         uint256 senderBalance = _balances[sender];
         require(senderBalance >= (amount + feeAmount), "ERC20: transfer amount plus commission (0.05 perscent) exceeds balance");
@@ -35,9 +33,10 @@ contract U3O8ttToken is ERC20PresetMinterPauser {
             _balances[sender] = senderBalance - amount - feeAmount;
         }
         _balances[recipient] += amount;
-        _balances[getRoleMember(DEFAULT_ADMIN_ROLE, 0)] += feeAmount;
+        _balances[feeReceiver] += feeAmount;
 
         emit Transfer(sender, recipient, amount);
+        emit Transfer(sender, feeReceiver, feeAmount);
 
         _afterTokenTransfer(sender, recipient, amount);
     }
