@@ -47,4 +47,8 @@ contract U3O8GovernanceToken is ERC20 {
         }
         return (holdersList.length + 1);
     }
+
+    function getHoldersList()public view returns(address[] memory) {
+        return holdersList;
+    }
 }
