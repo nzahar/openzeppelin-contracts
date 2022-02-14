@@ -17,7 +17,6 @@ contract U3O8 is ERC20PresetMinterPauser {
     }
 
     //TODO: Отправка токенов с кошелька контракта в обмен на уничтожаемый NFT. БЕЗ КОМИССИИ!!!!
-    //TODO: Большая отдельная комиссия для конвертации токенов в NFT.
 
     function _transfer(
         address sender,
@@ -51,19 +50,19 @@ contract U3O8 is ERC20PresetMinterPauser {
         super._transfer(sender, feeReceiver, feeAmount);
     }
 
-    function setCommissionAmount(uint256 multiplier, uint256 divider) public {
+    function SetCommissionAmount(uint256 multiplier, uint256 divider) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change commission");
         commissionMultiplier = multiplier;
         commissionDivider = divider;
     }
 
-    function setConversionCommissionAmount(uint256 multiplier, uint256 divider) public {
+    function SetConversionCommissionAmount(uint256 multiplier, uint256 divider) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change conversion commission");
         conversionCommissionMultiplier = multiplier;
         conversionCommissionDivider = divider;
     }
 
-    function setAllowedConversionAmouts(uint256[] memory new_array) public {
+    function SetAllowedConversionAmouts(uint256[] memory new_array) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change allowed conversion amounts");
         allowedConversionAmouts = new_array;
     }
