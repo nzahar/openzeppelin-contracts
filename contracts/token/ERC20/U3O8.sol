@@ -1,43 +1,70 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.2;
 
 import "./presets/ERC20PresetMinterPauser.sol";
 
-contract U3O8tttToken is ERC20PresetMinterPauser {
-    uint256 private _feeMultiplier = 5;
-    uint256 private _feeDivider = 10000;
+contract U3O8 is ERC20PresetMinterPauser {
+    uint256 public commissionMultiplier = 5;
+    uint256 public commissionDivider = 10000;
+    uint256 public conversionCommissionMultiplier = 5;
+    uint256 public conversionCommissionDivider = 1000;
+    uint256[] public allowedConversionAmouts = [2800 * (10 ** uint256(decimals())), 560 * (10 ** uint256(decimals())), 100 * (10 ** uint256(decimals()))];
     bytes32 public constant COMMISSION_RECEIVER_ROLE = keccak256("COMMISSION_RECEIVER_ROLE");
 
-    constructor() ERC20PresetMinterPauser("u3o8ttt", "U3O8ttt") {
+    constructor() ERC20PresetMinterPauser("U3O8 Uranium Token", "U3O8") {
         _mint(msg.sender, 10000 * (10 ** uint256(decimals())));
         _setupRole(COMMISSION_RECEIVER_ROLE, _msgSender());
     }
+
+    //TODO: Отправка токенов с кошелька контракта в обмен на уничтожаемый NFT. БЕЗ КОМИССИИ!!!!
+    //TODO: Большая отдельная комиссия для конвертации токенов в NFT.
 
     function _transfer(
         address sender,
         address recipient,
         uint256 amount
     ) internal virtual override {
-        require(sender != address(0), "ERC20: transfer from the zero address");
-        require(recipient != address(0), "ERC20: transfer to the zero address");
+        uint256 multiplier = commissionMultiplier;
+        uint256 divider = commissionDivider;
 
-        _beforeTokenTransfer(sender, recipient, amount);
+        if (recipient==address(this)) {
+            bool isRevert = true;
+            for (uint i; i < allowedConversionAmouts.length; i++) {
+                if (allowedConversionAmouts[i] == amount) {
+                    isRevert = false;
+                }
+            }
+            if (isRevert == true) {
+                revert("U3O8: amount must be in the list of alowed conversion amounts");
+            }
 
-        address feeReceiver = getRoleMember(COMMISSION_RECEIVER_ROLE, 0);
-        uint256 feeAmount = (amount * _feeMultiplier) / _feeDivider;
-        uint256 senderBalance = _balances[sender];
-        require(senderBalance >= (amount + feeAmount), "ERC20: transfer amount plus commission (0.05 perscent) exceeds balance");
-
-        unchecked {
-            _balances[sender] = senderBalance - amount - feeAmount;
+            multiplier = conversionCommissionMultiplier;
+            divider = conversionCommissionDivider;
         }
-        _balances[recipient] += amount;
-        _balances[feeReceiver] += feeAmount;
 
-        emit Transfer(sender, recipient, amount);
-        emit Transfer(sender, feeReceiver, feeAmount);
+        uint256 feeAmount = (amount * multiplier) / divider;
+        uint256 senderBalance = balanceOf(sender);
+        require(senderBalance >= (amount + feeAmount), "U3O8: transfer amount plus commission exceeds balance");
+        address feeReceiver = getRoleMember(COMMISSION_RECEIVER_ROLE, 0);
 
-        _afterTokenTransfer(sender, recipient, amount);
+        super._transfer(sender, recipient, amount);
+        super._transfer(sender, feeReceiver, feeAmount);
+    }
+
+    function setCommissionAmount(uint256 multiplier, uint256 divider) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change commission");
+        commissionMultiplier = multiplier;
+        commissionDivider = divider;
+    }
+
+    function setConversionCommissionAmount(uint256 multiplier, uint256 divider) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change conversion commission");
+        conversionCommissionMultiplier = multiplier;
+        conversionCommissionDivider = divider;
+    }
+
+    function setAllowedConversionAmouts(uint256[] memory new_array) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change allowed conversion amounts");
+        allowedConversionAmouts = new_array;
     }
 }

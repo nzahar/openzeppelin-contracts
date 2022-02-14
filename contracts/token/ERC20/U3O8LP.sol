@@ -3,10 +3,10 @@ pragma solidity ^0.8.2;
 
 import "./ERC20.sol";
 
-contract U3O8GovernanceToken is ERC20 {
+contract U3O8LP is ERC20 {
     address[] private holdersList;
 
-    constructor() ERC20("U3O8 Governance token", "U3O8G") {
+    constructor() ERC20("U3O8 Token", "U3O8") {
         _mint(msg.sender, 30000 * 10 ** decimals());
         holdersList.push(msg.sender);
     }
