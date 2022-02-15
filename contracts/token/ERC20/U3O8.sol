@@ -4,19 +4,32 @@ pragma solidity ^0.8.2;
 import "./presets/ERC20PresetMinterPauser.sol";
 
 contract U3O8 is ERC20PresetMinterPauser {
-    uint256 public commissionMultiplier = 5;
-    uint256 public commissionDivider = 10000;
-    uint256 public conversionCommissionMultiplier = 5;
-    uint256 public conversionCommissionDivider = 1000;
-    uint256[] public allowedConversionAmouts = [2800 * (10 ** uint256(decimals())), 560 * (10 ** uint256(decimals())), 100 * (10 ** uint256(decimals()))];
-    bytes32 public constant COMMISSION_RECEIVER_ROLE = keccak256("COMMISSION_RECEIVER_ROLE");
+    address private _commissionReceiver;
+    address private _conversionCommissionReceiver;
+    uint256 public commissionMultiplier;
+    uint256 public commissionDivider;
+    uint256 public conversionCommissionMultiplier;
+    uint256 public conversionCommissionDivider;
+    uint256 public reverseConversionCommissionMultiplier;
+    uint256 public reverseConversionCommissionDivider;
+    uint256[] public allowedConversionAmouts;
+    bytes32 public constant CONVERSION_ADMIN_ROLE = keccak256("CONVERSION_ADMIN_ROLE");
 
     constructor() ERC20PresetMinterPauser("U3O8 Uranium Token", "U3O8") {
         _mint(msg.sender, 10000 * (10 ** uint256(decimals())));
-        _setupRole(COMMISSION_RECEIVER_ROLE, _msgSender());
-    }
+        _setupRole(CONVERSION_ADMIN_ROLE, _msgSender());
 
-    //TODO: Отправка токенов с кошелька контракта в обмен на уничтожаемый NFT. БЕЗ КОМИССИИ!!!!
+        _commissionReceiver = msg.sender;
+        _conversionCommissionReceiver = msg.sender;
+
+        commissionMultiplier = 5;
+        commissionDivider = 10000;
+        conversionCommissionMultiplier = 5;
+        conversionCommissionDivider = 1000;
+        reverseConversionCommissionMultiplier = 0;
+        reverseConversionCommissionDivider = 1;
+        allowedConversionAmouts = [2800 * (10 ** uint256(decimals())), 560 * (10 ** uint256(decimals())), 100 * (10 ** uint256(decimals()))];
+    }
 
     function _transfer(
         address sender,
@@ -25,6 +38,8 @@ contract U3O8 is ERC20PresetMinterPauser {
     ) internal virtual override {
         uint256 multiplier = commissionMultiplier;
         uint256 divider = commissionDivider;
+
+        address feeReceiver = _commissionReceiver;
 
         if (recipient==address(this)) {
             bool isRevert = true;
@@ -39,15 +54,34 @@ contract U3O8 is ERC20PresetMinterPauser {
 
             multiplier = conversionCommissionMultiplier;
             divider = conversionCommissionDivider;
+
+            feeReceiver = _conversionCommissionReceiver;
         }
 
         uint256 feeAmount = (amount * multiplier) / divider;
         uint256 senderBalance = balanceOf(sender);
         require(senderBalance >= (amount + feeAmount), "U3O8: transfer amount plus commission exceeds balance");
-        address feeReceiver = getRoleMember(COMMISSION_RECEIVER_ROLE, 0);
 
         super._transfer(sender, recipient, amount);
         super._transfer(sender, feeReceiver, feeAmount);
+    }
+
+    function FinalizeReverseConversion(address recipient, uint256 amount) public {
+        require(hasRole(CONVERSION_ADMIN_ROLE, _msgSender()), "U3O8: must have conversion_admin role to approve reverse conversion");
+
+        uint256 feeAmount = (amount * reverseConversionCommissionMultiplier) / reverseConversionCommissionDivider;
+        uint256 senderBalance = balanceOf(address(this));
+        require(senderBalance >= amount, "U3O8: transfer amount exceeds balance");
+        uint256 sendAmount = amount - feeAmount;
+
+        super._transfer(address(this), recipient, sendAmount);
+        super._transfer(address(this), _conversionCommissionReceiver, feeAmount);
+    }
+
+    function SetCommissionReceivers(address commissionReceiver, address conversionCommissionReceiver) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change commission receivers");
+        _commissionReceiver = commissionReceiver;
+        _conversionCommissionReceiver = conversionCommissionReceiver;
     }
 
     function SetCommissionAmount(uint256 multiplier, uint256 divider) public {
@@ -60,6 +94,12 @@ contract U3O8 is ERC20PresetMinterPauser {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change conversion commission");
         conversionCommissionMultiplier = multiplier;
         conversionCommissionDivider = divider;
+    }
+
+    function SetReverseConversionCommissionAmount(uint256 multiplier, uint256 divider) public {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change reverse conversion commission");
+        reverseConversionCommissionMultiplier = multiplier;
+        reverseConversionCommissionDivider = divider;
     }
 
     function SetAllowedConversionAmouts(uint256[] memory new_array) public {
