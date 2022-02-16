@@ -69,7 +69,7 @@ contract U3O8 is ERC20PresetMinterPauser {
         super._transfer(sender, feeReceiver, feeAmount);
     }
 
-    function FinalizeReverseConversion(address recipient, uint256 amount) public {
+    function finalizeReverseConversion(address recipient, uint256 amount) public {
         require(hasRole(CONVERSION_ADMIN_ROLE, _msgSender()), "U3O8: must have conversion_admin role to approve reverse conversion");
 
         uint256 feeAmount = (amount * reverseConversionCommissionMultiplier) / reverseConversionCommissionDivider;
@@ -81,32 +81,32 @@ contract U3O8 is ERC20PresetMinterPauser {
         super._transfer(address(this), _conversionCommissionReceiver, feeAmount);
     }
 
-    function SetCommissionReceivers(address commissionReceiver, address conversionCommissionReceiver) public {
+    function setCommissionReceivers(address commissionReceiver, address conversionCommissionReceiver) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change commission receivers");
         _commissionReceiver = commissionReceiver;
         _conversionCommissionReceiver = conversionCommissionReceiver;
     }
 
-    function SetCommissionAmount(uint256 multiplier, uint256 divider) public {
+    function setCommissionAmount(uint256 multiplier, uint256 divider) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change commission");
         commissionMultiplier = multiplier;
         commissionDivider = divider;
     }
 
-    function SetConversionCommissionAmount(uint256 multiplier, uint256 divider) public {
+    function setConversionCommissionAmount(uint256 multiplier, uint256 divider) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change conversion commission");
         conversionCommissionMultiplier = multiplier;
         conversionCommissionDivider = divider;
     }
 
-    function SetReverseConversionCommissionAmount(uint256 multiplier, uint256 divider) public {
+    function setReverseConversionCommissionAmount(uint256 multiplier, uint256 divider) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change reverse conversion commission");
         reverseConversionCommissionMultiplier = multiplier;
         reverseConversionCommissionDivider = divider;
     }
 
-    function SetAllowedConversionAmouts(uint256[] memory new_array) public {
+    function setAllowedConversionAmouts(uint256[] memory newArray) public {
         require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "U3O8: must have admin role to change allowed conversion amounts");
-        allowedConversionAmouts = new_array;
+        allowedConversionAmouts = newArray;
     }
 }
