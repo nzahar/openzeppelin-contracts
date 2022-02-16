@@ -16,18 +16,21 @@ contract U3O8 is ERC20PresetMinterPauser {
     bytes32 public constant CONVERSION_ADMIN_ROLE = keccak256("CONVERSION_ADMIN_ROLE");
 
     constructor() ERC20PresetMinterPauser("U3O8 Uranium Token", "U3O8") {
-        _mint(msg.sender, 10000 * (10 ** uint256(decimals())));
+        _mint(_msgSender(), 10000 * (10 ** uint256(decimals())));
         _setupRole(CONVERSION_ADMIN_ROLE, _msgSender());
 
-        _commissionReceiver = msg.sender;
-        _conversionCommissionReceiver = msg.sender;
+        _commissionReceiver = _msgSender();
+        _conversionCommissionReceiver = _msgSender();
 
         commissionMultiplier = 5;
         commissionDivider = 10000;
+
         conversionCommissionMultiplier = 5;
         conversionCommissionDivider = 1000;
+
         reverseConversionCommissionMultiplier = 0;
         reverseConversionCommissionDivider = 1;
+
         allowedConversionAmouts = [2800 * (10 ** uint256(decimals())), 560 * (10 ** uint256(decimals())), 100 * (10 ** uint256(decimals()))];
     }
 
